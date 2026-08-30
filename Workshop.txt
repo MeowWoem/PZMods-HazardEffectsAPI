@@ -1,0 +1,5 @@
+version=1
+title=[B42] Hazard Effects API
+description=
+tags=Build 42;Interface;Multiplayer;Silly/Fun;QoL
+visibility=public
