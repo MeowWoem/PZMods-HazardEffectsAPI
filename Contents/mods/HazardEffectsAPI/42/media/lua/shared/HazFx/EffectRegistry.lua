@@ -32,3 +32,5 @@ function EffectRegistry:register(effect)
 end
 
 instance = EffectRegistry.new();
+
+return EffectRegistry;
