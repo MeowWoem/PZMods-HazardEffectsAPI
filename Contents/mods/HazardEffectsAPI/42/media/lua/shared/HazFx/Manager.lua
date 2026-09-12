@@ -4,30 +4,21 @@ require("HazFx/EffectRegistry");
 HazardEffects.Manager = HazardEffects.Manager or {};
 HazardEffects.Manager.__index = HazardEffects.Manager;
 
-local TICKS_PER_TICK_UPDATE = 20;
 local TICKS_PER_PLAYER_UPDATE = 20;
-
-local __ttu = 0;
 
 local instances = {};
 
 local Manager = HazardEffects.Manager;
 
-function _split (inputstr, sep)
-   if sep == nil then sep = '%s'; end
-   local t={};
-   for str in string.gmatch(inputstr, '([^'..sep..']+)') do table.insert(t, str); end
-   return t;
-end
-
 function Manager:_callFx(method, ...)
     for _, fxInstance in pairs(self.effects) do
-        --if(fxInstance.isActive) then
+        if fxInstance[method] then
             fxInstance[method](fxInstance, ...);
-        --end
+        end
     end
 end
 
+Manager.instances = instances;
 
 function Manager.getInstanceForPlayer(player, playerNum, playerOnlineID)
 
@@ -38,14 +29,20 @@ function Manager.getInstanceForPlayer(player, playerNum, playerOnlineID)
         if(playerOnlineID == nil) then return; end
         instanceID = playerOnlineID;
         player = player or getPlayerByOnlineID(playerOnlineID);
+        if(not player) then return nil; end
 
-    elseif(not isMultiplayer()) then
+    else
 
         player = player or getSpecificPlayer(playerNum or 0);
-        playerNum = playerNum or player:getPlayerNum();
+        if(not player) then return nil; end
+        playerNum = player:getPlayerNum();
         instanceID = playerNum;
 
     end
+
+    -- Ensure that playerNum is always defined. In singleplayer, playerNum is always 0. In multiplayer, playerNum is the local player's index, and playerOnlineID is the unique online ID of the player.
+    -- @TODO: Change -1 to 0. -1 is used for debugging purposes only. 0 is the default playerNum for singleplayer.
+    playerNum = playerNum or -1;
 
 	if not instances[instanceID] or instances[instanceID].player ~= player then
 		instances[instanceID] = Manager.new(player, playerNum, playerOnlineID);
@@ -69,10 +66,18 @@ function Manager:init(player, playerNum, playerOnlineID)
 	self.playerOnlineID = playerOnlineID;
     self.effects = {};
 
-    self.modData = self.player:getModData();
+    local playerMD = HazardEffects.getModData(self.player);
+    playerMD.effects = playerMD.effects or {};
 
+    self.modData = playerMD.effects;
+
+    -- Loop through "HazFx/Effects/BaseEffect" objects in the effects registry and create an instance of each of them.
     for k, v in pairs(HazardEffects.EffectRegistry.getInstance().effects) do
         self.effects[k] = v:new(player, playerNum, playerOnlineID);
+    end
+
+    if isMultiplayer() and isServer() then
+        self.player:transmitModData();
     end
 
     if(isMultiplayer() and isServer()) then
@@ -92,20 +97,41 @@ function Manager:init(player, playerNum, playerOnlineID)
     end
 end
 
+function Manager:activate(effect, duration, ...)
+    
+    hazlog("Manager:activate", tostring(effect));
+
+    if(self.effects[effect]) then
+        self.effects[effect]:activate(duration, ...);
+        if(isMultiplayer() and isServer()) then
+            self.player:transmitModData();
+        end
+        return true;
+    else
+        hazwarn("Manager:activate", string.format("the effect \"%s\" not exists!", effect));
+        return false;
+    end
+
+end
+
 function Manager:deactivate(effect)
     
     hazlog("Manager:deactivate", tostring(effect));
 
     if(effect == nil) then
-        Manager._callFx(self, "deactivate");
-        return true;
+        self:_callFx("deactivate");
     elseif(self.effects[effect] and self.effects[effect].isActive) then
         self.effects[effect]:deactivate();
-        return true;
     else
         hazwarn("Manager:deactivate", string.format("the effect \"%s\" not exists!", effect));
         return false;
     end
+
+    if(isMultiplayer() and isServer()) then
+        self.player:transmitModData();
+    end
+    
+    return true;
 
 end
 
@@ -114,110 +140,33 @@ function Manager:tick()
     if(self.player:isGodMod()) then
         --self:deactivate();
     end
+    self:_callFx("tick");
 	
 end
 
 function Manager:everyOneMinute()
-    Manager._callFx(self, "everyOneMinute");
+    self:_callFx("everyOneMinute");
+    if(isMultiplayer() and isServer()) then
+        self.player:transmitModData();
+    end
 end
 
 function Manager:onPlayerUpdate()
+    
     if(self.__tpu >= TICKS_PER_PLAYER_UPDATE) then
-        Manager._callFx(self, "onPlayerUpdate");
+        self:_callFx("onPlayerUpdate");
         self.__tpu = 0;
     else
         self.__tpu = self.__tpu + 1;
     end
 end
 
-
----------------------------------------
--- EVENTS
----------------------------------------
-Events.OnTick.Add(function()
-    if(__ttu >= TICKS_PER_TICK_UPDATE) then
-        for _, instance in pairs(instances) do
-            instance:tick();
-        end
-        __ttu = 0;
-    else
-        __ttu = __ttu + 1;
-    end
-end);
-
-Events.OnPlayerUpdate.Add(function(player)
-    local instance = Manager.getInstanceForPlayer(player);
-    if(instance) then
-        instance:onPlayerUpdate();
-    end
-end);
-
-Events.EveryOneMinute.Add(function()
-
-    -- Check if the player is still online.
-    if(isMultiplayer() and isServer()) then
-
-        local onlineIDs = {};
-        local players = getOnlinePlayers();
-
-        for i = 0, players:size() - 1 do
-
-            local p = players:get(i);
-            onlineIDs[p:getOnlineID()] = true;
-            Manager.getInstanceForPlayer(p, p:getPlayerNum(), p:getOnlineID());
-
-        end
-
-        for id, instance in pairs(instances) do
-            -- Destroy the instance if the player is no longer logged
-            if not onlineIDs[id] then instances[id] = nil; end
-        end
-
-    end
-
-    -- Update the manager
-    for _, instance in pairs(instances) do
-        instance:everyOneMinute();
-    end
-
-end);
-
-Events.OnCharacterDeath.Add(function(character)
-    if not instanceof(character, "IsoPlayer") then return; end
-
-    local instanceID = character:getPlayerNum();
-    if(isMultiplayer()) then
-        instanceID = character:getOnlineID();
-    end
-
-    instances[instanceID] = nil;
-end);
-
-Events.OnServerCommand.Add(function(module, command, args)
-    if(module ~= "HazFx") then return; end
-    command = _split(command, ":");
-    if(command[1] ~= "manager") then return; end
-
-    local player = getPlayerByOnlineID(args.playerOnlineID);
-    if(not player or not player:isLocalPlayer()) then return; end
-    local playerNum = player:getPlayerNum();
-
-    local instance = Manager.getInstanceForPlayer(nil, playerNum);
-    if(command[2] == "init") then
-        if(isDebugEnabled()) then
-            if(isDebugEnabled()) then
-                print("CLIENT: onServerCommand:manager:init");
-                print("        playerNum: " .. args.playerNum);
-                print("        playerOnlineID: " .. args.playerOnlineID);
-            end
-        end
-    end
-end);
-
-
 if(isDebugEnabled()) then
     function a()
-        Manager.getInstanceForPlayer(nil, 0);
+        local instance = Manager.getInstanceForPlayer(nil, 0);
+        instance:activate("BlindnessEffect", 60);
     end
     
 end
+
+return Manager;
