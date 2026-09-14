@@ -130,7 +130,7 @@ function BaseEffect:initModData()
     playerMD.effects[self.Type] = playerMD.effects[self.Type] or {};
 
     local effectMD = playerMD.effects[self.Type];
-
+    print(effectMD);
     for field, defaultValue in pairs(self.persistants) do
         if effectMD[field] == nil then effectMD[field] = defaultValue; end
     end
@@ -196,13 +196,11 @@ end
 
 ---Deactivates the effect and resets time counters and stack.
 function BaseEffect:deactivate()
-    if(Utils.isServer()) then
-        self.duration = 0;
-        self.stack = 0;
-        self.timeElapsed = 0;
-        self.isActive = false;
-        self:saveToModData();
-    end
+    self.duration = 0;
+    self.stack = 0;
+    self.timeElapsed = 0;
+    self.isActive = false;
+    self:saveToModData();
 end
 
 ---Hook function executed every engine tick.
@@ -213,14 +211,14 @@ function BaseEffect:render() end;
 
 ---Hook function executed every in-game minute.
 function BaseEffect:everyOneMinute()
-    if(self.isActive) then  
+    if(self.isActive and Utils.isServer()) then  
         self:updateHealRate();
+        print(self.timeElapsed, "/", self.duration);
         self.timeElapsed = self.timeElapsed + self.healRate;
         if(self.timeElapsed >= self.duration) then
             self:deactivate();
         end
-    else
-        
+        self:saveToModData(); 
     end
 end;
 
@@ -229,8 +227,6 @@ end;
 function BaseEffect:onPlayerUpdate()
     if(not Utils.isClient()) then
         return;
-    elseif(isMultiplayer() and isClient()) then
-        self:loadFromModData();
     end
     self:render();
 end;

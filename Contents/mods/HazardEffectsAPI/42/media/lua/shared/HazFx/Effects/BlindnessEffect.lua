@@ -17,7 +17,7 @@ function BlindnessEffect:initialize()
     self:definePersistant("radius", 0);
     self:definePersistant("isIlliterate", self.player:hasTrait(CharacterTrait.ILLITERATE));
 
-    if getActivatedMods():contains("MoodleFramework") == true then
+    if getActivatedMods():contains("MoodleFramework") == true and Utils.isClient() then
         self.moodle = MF.getMoodle("BlindnessEffect", self.playerNum);
     end
 
@@ -53,8 +53,11 @@ end
 function BlindnessEffect:deactivate()
     self.transitionTick = 0;
     BaseEffect.deactivate(self);
-    self._searchMode:setEnabled(self.playerNum, false);
 
+    if(Utils.isClient()) then
+        self._searchMode:setEnabled(self.playerNum, false);
+    end
+    
     if(not self.isIlliterate) then
         self.player:getCharacterTraits():remove(CharacterTrait.ILLITERATE);
     end

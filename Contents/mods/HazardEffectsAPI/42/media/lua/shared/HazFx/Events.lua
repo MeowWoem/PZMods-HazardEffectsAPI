@@ -83,10 +83,19 @@ local function onServerCommand(module, command, args)
             string.format("        playerNum: %s", tostring(args.playerNum)),
             string.format("        playerOnlineID: %s", tostring(args.playerOnlineID)),
         }, "\n"));
+        
     elseif(command[2] == "activate") then
         instance:activate(args.effect, args.duration, args.options);
     elseif(command[2] == "deactivate") then
         instance:deactivate(args.effect);
+    elseif(command[2] == "everyOneMinute") then
+        for effectName, effectData in pairs(args.effectsData) do
+            for key, val in pairs(effectData) do
+                if(instance.effects[effectName]) then
+                    instance.effects[effectName][key] = val;
+                end
+            end
+        end
     end
 end
 

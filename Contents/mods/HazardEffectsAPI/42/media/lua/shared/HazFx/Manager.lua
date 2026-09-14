@@ -63,7 +63,7 @@ function Manager:sendServerCommand(command, args)
     args.playerNum = self.playerNum;
     args.playerOnlineID = self.playerOnlineID;
 
-    sendServerCommand("HazFx", "manager:" .. command, args);
+    sendServerCommand(self.player, "HazFx", "manager:" .. command, args);
 end
 
 function Manager:init(player, playerNum, playerOnlineID)
@@ -169,6 +169,17 @@ function Manager:everyOneMinute()
     self:_callFx("everyOneMinute");
     if(isMultiplayer() and isServer()) then
         self.player:transmitModData();
+        local args = {
+            effectsData = {}
+        };
+        for _, fxInstance in pairs(self.effects) do
+            args.effectsData[fxInstance.Type] = {};
+            for k, _ in pairs(fxInstance.persistants) do
+                args.effectsData[fxInstance.Type][k] = fxInstance[k];
+            end
+        end
+
+        self:sendServerCommand("everyOneMinute", args);
     end
 end
 
@@ -188,6 +199,10 @@ if(isDebugEnabled()) then
         instance:activate("BlindnessEffect", 60, {
             radius = 1
         });
+    end
+    function b()
+        local instance = Manager.getInstanceForPlayer(nil, 0);
+        instance:deactivate("BlindnessEffect");
     end
     
 end
