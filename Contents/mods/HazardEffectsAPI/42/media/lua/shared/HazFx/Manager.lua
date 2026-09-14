@@ -114,6 +114,8 @@ function Manager:activate(effect, duration, options)
         end
 
         self:sendServerCommand("activate", {
+            effect = effect,
+            duration = duration,
             options = options
         });
 
