@@ -1,0 +1,10 @@
+{
+    "Moodles_BlindnessEffect_Bad_lvl1": "Slightly reduced vision",
+    "Moodles_BlindnessEffect_Bad_desc_lvl1": "The outlines are still a little blurry, but your vision is starting to stabilize.",
+    "Moodles_BlindnessEffect_Bad_lvl2": "Vision severely reduced",
+    "Moodles_BlindnessEffect_Bad_desc_lvl2": "You have difficulty assessing your environment and spotting threats in the distance.",
+    "Moodles_BlindnessEffect_Bad_lvl3": "Visually impaired",
+    "Moodles_BlindnessEffect_Bad_desc_lvl3": "Your vision is drastically reduced. Beware of blind spots.",
+    "Moodles_BlindnessEffect_Bad_lvl4": "Blind",
+    "Moodles_BlindnessEffect_Bad_desc_lvl4": "You can barely make out anything around you anymore. Moving forward is an act of faith."
+}
