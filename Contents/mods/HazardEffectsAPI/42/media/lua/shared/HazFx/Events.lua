@@ -83,7 +83,10 @@ local function onServerCommand(module, command, args)
             string.format("        playerNum: %s", tostring(args.playerNum)),
             string.format("        playerOnlineID: %s", tostring(args.playerOnlineID)),
         }, "\n"));
-
+    elseif(command[2] == "activate") then
+        instance:activate(args.effect, args.duration, args.options);
+    elseif(command[2] == "deactivate") then
+        instance:deactivate(args.effect);
     end
 end
 
