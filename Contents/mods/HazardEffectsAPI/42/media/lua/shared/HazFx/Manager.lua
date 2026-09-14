@@ -116,7 +116,7 @@ end
 
 function Manager:deactivate(effect)
     
-    hazlog("Manager:deactivate", tostring(effect));
+    hazlog("Manager:deactivate: ", effect == nil and "All" or tostring(effect));
 
     if(effect == nil) then
         self:_callFx("deactivate");
@@ -138,7 +138,7 @@ end
 function Manager:tick()
     
     if(self.player:isGodMod()) then
-        --self:deactivate();
+        self:deactivate();
     end
     self:_callFx("tick");
 	
@@ -164,7 +164,7 @@ end
 if(isDebugEnabled()) then
     function a()
         local instance = Manager.getInstanceForPlayer(nil, 0);
-        instance:activate("BlindnessEffect", 60);
+        instance:activate("BlindnessEffect", 60, 1);
     end
     
 end
