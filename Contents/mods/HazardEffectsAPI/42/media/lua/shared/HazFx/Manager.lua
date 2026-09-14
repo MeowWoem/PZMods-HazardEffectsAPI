@@ -58,6 +58,14 @@ function Manager.new(player, playerNum, playerOnlineID)
 	return o;
 end
 
+function Manager:sendServerCommand(command, args)
+    args = args or {};
+    args.playerNum = self.playerNum;
+    args.playerOnlineID = self.playerOnlineID;
+
+    sendServerCommand("HazFx", "manager:" .. command, args);
+end
+
 function Manager:init(player, playerNum, playerOnlineID)
     
     self.__tpu = 0;
@@ -88,24 +96,27 @@ function Manager:init(player, playerNum, playerOnlineID)
             string.format("        playerOnlineID: %s", tostring(self.playerOnlineID)),
         }, "\n"));
         
-        sendServerCommand("HazFx", "manager:init", {
-            playerNum   = self.playerNum,
-            playerOnlineID   = self.playerOnlineID
-        });
+        self:sendServerCommand("init");
+        
     else
         hazlog("Manager:init", string.format("Initialzed for player %d", playerNum));
     end
 end
 
-function Manager:activate(effect, duration, ...)
+function Manager:activate(effect, duration, options)
     
     hazlog("Manager:activate", tostring(effect));
 
     if(self.effects[effect]) then
-        self.effects[effect]:activate(duration, ...);
+        self.effects[effect]:activate(duration, options);
         if(isMultiplayer() and isServer()) then
             self.player:transmitModData();
         end
+
+        self:sendServerCommand("activate", {
+            options = options
+        });
+
         return true;
     else
         hazwarn("Manager:activate", string.format("the effect \"%s\" not exists!", effect));
@@ -120,8 +131,16 @@ function Manager:deactivate(effect)
 
     if(effect == nil) then
         self:_callFx("deactivate");
+        
+        self:sendServerCommand("deactivate", {
+            effect = effect
+        });
     elseif(self.effects[effect] and self.effects[effect].isActive) then
         self.effects[effect]:deactivate();
+        
+        self:sendServerCommand("deactivate", {
+            effect = effect
+        });
     else
         hazwarn("Manager:deactivate", string.format("the effect \"%s\" not exists!", effect));
         return false;
@@ -164,7 +183,9 @@ end
 if(isDebugEnabled()) then
     function a()
         local instance = Manager.getInstanceForPlayer(nil, 0);
-        instance:activate("BlindnessEffect", 60, 1);
+        instance:activate("BlindnessEffect", 60, {
+            radius = 1
+        });
     end
     
 end
