@@ -216,7 +216,7 @@ function BaseEffect:everyOneMinute()
     if(self.isActive) then  
         self:updateHealRate();
         self.timeElapsed = self.timeElapsed + self.healRate;
-        if(self.timeElapsed >= self.duration or self.player:isGodMod()) then
+        if(self.timeElapsed >= self.duration) then
             self:deactivate();
         end
     else
