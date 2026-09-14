@@ -64,9 +64,14 @@ function BlindnessEffect:deactivate()
     end
 end
 
-function BlindnessEffect:activate(duration, radius)
+function BlindnessEffect:activate(duration, options)
+
+    options = options or {
+        radius = 1
+    };
+
     self.transitionTick = 0;
-    self.radius = radius or 10;
+    self.radius = options.radius or 1;
     BaseEffect.activate(self, duration);
     
     local bodyDamage = self.player:getBodyDamage();

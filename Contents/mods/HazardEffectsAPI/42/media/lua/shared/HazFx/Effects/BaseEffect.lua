@@ -184,7 +184,7 @@ end
 
 ---Activates or stack the effect for a given duration.
 ---@param duration number Duration in in-game minutes (0 for infinite/indefinite).
-function BaseEffect:activate(duration)
+function BaseEffect:activate(duration, options)
     self.duration = duration;
     if(self.isActive) then 
         self.stack = self.stack + 1;
